@@ -107,6 +107,12 @@ class UserPreferences(context: Context) : SharedPreferenceStore(
 		var preferExoPlayerFfmpeg = booleanPreference("exoplayer_prefer_ffmpeg", defaultValue = false)
 
 		/**
+		 * Convert Dolby Vision profile 7 (dual-layer, FEL/MEL) streams to profile 8 (single-layer)
+		 * on-device during Direct Play, instead of relying on the server to transcode. Experimental.
+		 */
+		var convertDolbyVisionProfile7to8 = booleanPreference("convert_dolby_vision_profile_7_to_8", defaultValue = false)
+
+		/**
 		 * User defined AVC level override. AUTO uses device-reported capabilities.
 		 */
 		var userAVCLevel = enumPreference("user_avc_level", AVCLevel.AUTO)

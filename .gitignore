@@ -7,3 +7,9 @@ local.properties
 .kotlin/
 build/
 captures/
+
+# Rust build artifacts + cargo-ndk generated native libraries (rebuilt by the cargoNdkBuild
+# Gradle task, see playback/dovi/build.gradle.kts)
+playback/dovi/rust/target/
+playback/dovi/src/main/jniLibs/
+

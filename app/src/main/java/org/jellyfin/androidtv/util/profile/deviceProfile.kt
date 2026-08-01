@@ -87,6 +87,7 @@ fun createDeviceProfile(
 	pgsDirectPlay = userPreferences[UserPreferences.pgsDirectPlay],
 	userAVCLevel = userPreferences[UserPreferences.userAVCLevel].level,
 	userHEVCLevel = userPreferences[UserPreferences.userHEVCLevel].level,
+	convertDolbyVisionProfile7to8 = userPreferences[UserPreferences.convertDolbyVisionProfile7to8],
 )
 
 fun createDeviceProfile(
@@ -98,6 +99,7 @@ fun createDeviceProfile(
 	pgsDirectPlay: Boolean,
 	userAVCLevel: Int?,
 	userHEVCLevel: Int?,
+	convertDolbyVisionProfile7to8: Boolean = false,
 ) = buildDeviceProfile {
 	val allowedAudioCodecs = when {
 		downMixAudio -> downmixSupportedAudioCodecs
@@ -131,7 +133,10 @@ fun createDeviceProfile(
 
 	// HEVC
 	val supportsHevcDolbyVision = mediaTest.supportsHevcDolbyVision()
-	val supportsHevcDolbyVisionEL = mediaTest.supportsHevcDolbyVisionEL()
+	// When on-device profile 7 -> 8 conversion is enabled, tell the server this device supports
+	// Dolby Vision dual-layer (EL) content so it keeps offering Direct Play; the client rewrites
+	// the profile 7 RPU/bitstream to profile 8 itself instead of relying on server transcoding.
+	val supportsHevcDolbyVisionEL = mediaTest.supportsHevcDolbyVisionEL() || convertDolbyVisionProfile7to8
 	val supportsHevcHDR10 = mediaTest.supportsHevcHDR10()
 	val supportsHevcHDR10Plus = mediaTest.supportsHevcHDR10Plus()
 

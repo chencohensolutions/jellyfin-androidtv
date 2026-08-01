@@ -114,6 +114,7 @@ dependencies {
 	// Jellyfin
 	implementation(projects.design)
 	implementation(projects.playback.core)
+	implementation(projects.playback.dovi)
 	implementation(projects.playback.jellyfin)
 	implementation(projects.playback.media3.exoplayer)
 	implementation(projects.playback.media3.session)

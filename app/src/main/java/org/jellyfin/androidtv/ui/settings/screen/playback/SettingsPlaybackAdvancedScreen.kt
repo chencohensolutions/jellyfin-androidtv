@@ -301,6 +301,17 @@ fun SettingsPlaybackAdvancedScreen() {
 			)
 		}
 
+		item {
+			var convertDolbyVisionProfile7to8 by rememberPreference(userPreferences, UserPreferences.convertDolbyVisionProfile7to8)
+			ListButton(
+				headingContent = { Text(stringResource(R.string.convert_dolby_vision_profile_7_to_8)) },
+				trailingContent = { Checkbox(checked = convertDolbyVisionProfile7to8) },
+				captionContent = { Text(stringResource(R.string.convert_dolby_vision_profile_7_to_8_content)) },
+				onClick = { convertDolbyVisionProfile7to8 = !convertDolbyVisionProfile7to8 },
+				modifier = Modifier.focusKey("convert_dolby_vision_profile_7_to_8")
+			)
+		}
+
 		item { ListSection(headingContent = { Text(stringResource(R.string.pref_troubleshooting)) }) }
 
 		item {

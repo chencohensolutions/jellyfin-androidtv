@@ -1,0 +1,22 @@
+[package]
+name = "dovi_jni"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "dovi_jni"
+# cdylib: the shared object loaded by Android via System.loadLibrary().
+# rlib: allows `cargo test` to run the conversion/NAL-splitting logic on the host.
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Lightweight, standalone crate (NOT the full dovi_tool CLI) providing Dolby Vision RPU
+# parsing/rewriting. Default features only - no capi/serde/xml, we call the Rust API directly.
+dolby_vision = "3.3"
+jni = "0.21"
+
+[profile.release]
+lto = true
+opt-level = "z"
+strip = true

@@ -8,6 +8,7 @@ include(":app")
 // Modules
 include(":design")
 include(":playback:core")
+include(":playback:dovi")
 include(":playback:jellyfin")
 include(":playback:media3:exoplayer")
 include(":playback:media3:session")
