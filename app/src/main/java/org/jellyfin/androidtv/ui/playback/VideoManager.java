@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.os.Handler;
 import android.util.TypedValue;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
@@ -45,6 +46,7 @@ import androidx.media3.extractor.ts.TsExtractor;
 import androidx.media3.ui.AspectRatioFrameLayout;
 import androidx.media3.ui.CaptionStyleCompat;
 import androidx.media3.ui.PlayerView;
+import androidx.media3.ui.SubtitleView;
 
 import org.jellyfin.androidtv.R;
 import org.jellyfin.androidtv.data.compat.StreamInfo;
@@ -129,6 +131,21 @@ public class VideoManager {
                 strokeColor,
                 TypefaceCompat.create(activity, Typeface.DEFAULT, textWeight, false)
         );
+
+        SubtitleView subtitleView = mExoPlayerView.getSubtitleView();
+        if (subtitleView != null) {
+            // By default the subtitle view lives inside PlayerView's aspect-ratio-constrained content frame,
+            // so its size/position fractions (e.g. bottom padding) are relative to the letterboxed video instead
+            // of the screen. Move it to be a full-screen sibling so those fractions are screen-relative.
+            ViewGroup subtitleParent = (ViewGroup) subtitleView.getParent();
+            ViewGroup playerViewParent = (ViewGroup) mExoPlayerView.getParent();
+            if (subtitleParent != null && playerViewParent != null && subtitleParent != playerViewParent) {
+                subtitleParent.removeView(subtitleView);
+                int playerViewIndex = playerViewParent.indexOfChild(mExoPlayerView);
+                playerViewParent.addView(subtitleView, playerViewIndex + 1, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+            }
+        }
+
         mExoPlayerView.getSubtitleView().setFixedTextSize(TypedValue.COMPLEX_UNIT_DIP, userPreferences.get(UserPreferences.Companion.getSubtitlesTextSize()));
         mExoPlayerView.getSubtitleView().setBottomPaddingFraction(userPreferences.get(UserPreferences.Companion.getSubtitlesOffsetPosition()));
         mExoPlayerView.getSubtitleView().setStyle(subtitleStyle);

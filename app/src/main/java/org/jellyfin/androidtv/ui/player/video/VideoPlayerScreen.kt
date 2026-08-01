@@ -67,12 +67,10 @@ fun VideoPlayerScreen() {
 			mediaToastRegistry = mediaToastRegistry,
 		)
 
+		// Subtitles are sized/positioned relative to the full screen, not the (possibly letterboxed) video bounds.
 		PlayerSubtitles(
 			playbackManager = playbackManager,
-			modifier = Modifier
-				.aspectRatio(aspectRatio, videoSize.height < videoSize.width)
-				.fillMaxSize()
-				.align(Alignment.Center)
+			modifier = Modifier.fillMaxSize()
 		)
 	}
 }
