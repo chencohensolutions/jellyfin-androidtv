@@ -12,6 +12,14 @@ private val modelsWithDoViHdr10PlusBug = listOf(
 	"AFTMM", // Amazon Fire TV 4K (1st Gen)
 )
 
+// The codec capability API reports DV profile 7 (dual-layer/EL) decoding as supported, but the
+// c2.mtk.dvav.ser.decoder component actually fails (MediaCodec error 0x80000000) on real profile 7
+// streams - confirmed via logcat on this exact model.
+private val modelsWithDoViElDecodeBug = listOf(
+	"Google TV Streamer",
+)
+
 object KnownDefects {
 	val hevcDoviHdr10PlusBug = Build.MODEL in modelsWithDoViHdr10PlusBug
+	val hevcDoviElDecodeBug = Build.MODEL in modelsWithDoViElDecodeBug
 }
