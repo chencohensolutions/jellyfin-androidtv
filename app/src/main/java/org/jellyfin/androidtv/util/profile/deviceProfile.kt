@@ -61,7 +61,6 @@ private val hlsFmp4AudioCodecs = arrayOf(
 	Codec.Audio.FLAC,
 	Codec.Audio.OPUS,
 	Codec.Audio.DTS,
-	Codec.Audio.TRUEHD
 )
 
 private fun UserPreferences.getMaxBitrate(): Int {
@@ -136,7 +135,8 @@ fun createDeviceProfile(
 	// When on-device profile 7 -> 8 conversion is enabled, tell the server this device supports
 	// Dolby Vision dual-layer (EL) content so it keeps offering Direct Play; the client rewrites
 	// the profile 7 RPU/bitstream to profile 8 itself instead of relying on server transcoding.
-	val supportsHevcDolbyVisionEL = mediaTest.supportsHevcDolbyVisionEL() || convertDolbyVisionProfile7to8
+	// KnownDefects.hevcDoviElDecodeBug overrides the codec capability API's (false) claim of EL support.
+	val supportsHevcDolbyVisionEL = (mediaTest.supportsHevcDolbyVisionEL() && !KnownDefects.hevcDoviElDecodeBug) || convertDolbyVisionProfile7to8
 	val supportsHevcHDR10 = mediaTest.supportsHevcHDR10()
 	val supportsHevcHDR10Plus = mediaTest.supportsHevcHDR10Plus()
 
@@ -179,6 +179,21 @@ fun createDeviceProfile(
 
 		copyTimestamps = false
 		enableSubtitlesInManifest = true
+	}
+
+	// Progressive (non-HLS) MKV remux, used instead of HLS for codecs HLS can't carry reliably
+	// (e.g. TrueHD/MLP has no standardized fMP4 sample-entry spec, unlike Matroska's A_TRUEHD).
+	transcodingProfile {
+		type = DlnaProfileType.VIDEO
+		context = EncodingContext.STREAMING
+
+		container = Codec.Container.MKV
+		protocol = MediaStreamProtocol.HTTP
+
+		videoCodec(*hlsVideoCodecs)
+		audioCodec(*allowedAudioCodecs)
+
+		copyTimestamps = false
 	}
 
 	// Audio
