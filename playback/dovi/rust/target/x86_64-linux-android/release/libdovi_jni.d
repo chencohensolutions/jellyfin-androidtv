@@ -1,0 +1,1 @@
+C:\src\jellyfin-androidtv\playback\dovi\rust\target\x86_64-linux-android\release\libdovi_jni.rlib: C:\src\jellyfin-androidtv\playback\dovi\rust\src\lib.rs C:\src\jellyfin-androidtv\playback\dovi\rust\src\nal.rs
