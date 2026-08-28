@@ -3,12 +3,15 @@ package org.jellyfin.androidtv.ui.playback;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.ColorMatrixColorFilter;
+import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.media.audiofx.DynamicsProcessing;
 import android.media.audiofx.DynamicsProcessing.Limiter;
 import android.media.audiofx.Equalizer;
 import android.net.Uri;
 import android.os.Handler;
+import android.os.Build;
 import android.util.TypedValue;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -83,6 +86,8 @@ public class VideoManager {
     public ExoPlayer mExoPlayer;
     private PlayerView mExoPlayerView;
     private Handler mHandler = new Handler();
+    private View mGuiOverlay;
+    private View mSubtitleView;
 
     private long mMetaDuration = -1;
     private long lastExoPlayerPosition = -1;
@@ -118,6 +123,8 @@ public class VideoManager {
         }
 
         mExoPlayerView = view.findViewById(R.id.exoPlayerView);
+        mGuiOverlay = view.findViewById(R.id.gui_overlay);
+        mSubtitleView = mExoPlayerView.getSubtitleView();
         mExoPlayerView.setPlayer(mExoPlayer);
         int strokeColor = userPreferences.get(UserPreferences.Companion.getSubtitleTextStrokeColor()).intValue();
         int textWeight = userPreferences.get(UserPreferences.Companion.getSubtitlesTextWeight());
@@ -193,6 +200,7 @@ public class VideoManager {
             @Override
             public void onTracksChanged(Tracks tracks) {
                 Timber.d("Tracks changed");
+                applyHdrGuiBrightness(tracks);
             }
         });
     }
@@ -602,8 +610,70 @@ public class VideoManager {
 
     public void destroy() {
         mPlaybackControllerNotifiable = null;
+        resetHdrGuiBrightness();
         stopPlayback();
         releasePlayer();
+    }
+
+    private void applyHdrGuiBrightness(@NonNull Tracks tracks) {
+        boolean hdr = false;
+        for (Tracks.Group group : tracks.getGroups()) {
+            if (group.getType() != C.TRACK_TYPE_VIDEO) {
+                continue;
+            }
+
+            TrackGroup trackGroup = group.getMediaTrackGroup();
+            for (int index = 0; index < trackGroup.length; index++) {
+                if (group.isTrackSelected(index) && VideoManagerHelperKt.isHdrVideo(trackGroup.getFormat(index))) {
+                    hdr = true;
+                    break;
+                }
+            }
+            if (hdr) {
+                break;
+            }
+        }
+
+        float brightnessFactor = VideoManagerHelperKt.calculateHdrGuiBrightnessFactor(
+                hdr,
+                userPreferences.get(UserPreferences.Companion.getHdrGuiBrightness())
+        );
+        if (brightnessFactor == 1f) {
+            resetHdrGuiBrightness();
+            return;
+        }
+
+        ColorMatrixColorFilter filter = new ColorMatrixColorFilter(
+                VideoManagerHelperKt.createHdrGuiColorMatrix(brightnessFactor)
+        );
+        applyHdrGuiFilter(mGuiOverlay, filter);
+        applyHdrGuiFilter(mSubtitleView, filter);
+    }
+
+    private void applyHdrGuiFilter(@NonNull View view, @NonNull ColorMatrixColorFilter filter) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            view.setRenderEffect(android.graphics.RenderEffect.createColorFilterEffect(filter));
+        } else {
+            Paint paint = new Paint();
+            paint.setColorFilter(filter);
+            view.setLayerType(View.LAYER_TYPE_HARDWARE, paint);
+        }
+    }
+
+    private void resetHdrGuiBrightness() {
+        resetHdrGuiFilter(mGuiOverlay);
+        resetHdrGuiFilter(mSubtitleView);
+    }
+
+    private void resetHdrGuiFilter(@Nullable View view) {
+        if (view == null) {
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            view.setRenderEffect(null);
+        } else {
+            view.setLayerType(View.LAYER_TYPE_NONE, null);
+        }
     }
 
     private void releasePlayer() {

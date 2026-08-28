@@ -31,6 +31,13 @@
             android:layout_height="match_parent"
             app:use_controller="false" />
 
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/gui_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/leanback_fragment"
             android:name="org.jellyfin.androidtv.ui.playback.overlay.LeanbackOverlayFragment"
@@ -38,9 +45,7 @@
             android:layout_height="match_parent"
             android:layout_gravity="center" />
 
-    </FrameLayout>
-
-    <FrameLayout
+        <FrameLayout
         android:id="@+id/popupArea"
         android:layout_width="fill_parent"
         android:layout_height="225dp"
@@ -55,7 +60,7 @@
             android:layout_gravity="start|bottom"
             android:layout_marginTop="16dp"
             android:orientation="horizontal" />
-    </FrameLayout>
+        </FrameLayout>
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/topPanel"
@@ -114,10 +119,11 @@
             android:layout_height="wrap_content"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <org.jellyfin.androidtv.ui.playback.overlay.SkipOverlayView
-        android:id="@+id/skip_overlay"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        <org.jellyfin.androidtv.ui.playback.overlay.SkipOverlayView
+            android:id="@+id/skip_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+        </FrameLayout>
 </FrameLayout>

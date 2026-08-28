@@ -219,6 +219,35 @@ fun SettingsPlaybackAdvancedScreen() {
 		}
 
 		item {
+			var hdrGuiBrightness by rememberPreference(userPreferences, UserPreferences.hdrGuiBrightness)
+			val interactionSource = remember { MutableInteractionSource() }
+
+			ListControl(
+				headingContent = { Text(stringResource(R.string.hdr_gui_brightness)) },
+				captionContent = { Text(stringResource(R.string.hdr_gui_brightness_description)) },
+				interactionSource = interactionSource,
+				modifier = Modifier.focusKey("hdr_gui_brightness")
+			) {
+				Row(verticalAlignment = Alignment.CenterVertically) {
+					RangeControl(
+						modifier = Modifier.height(4.dp).weight(1f),
+						interactionSource = interactionSource,
+						min = 10f,
+						max = 100f,
+						stepForward = 10f,
+						value = hdrGuiBrightness.coerceIn(10, 100).toFloat(),
+						onValueChange = { hdrGuiBrightness = it.roundToInt().coerceIn(10, 100) }
+					)
+
+					Spacer(Modifier.width(Tokens.Space.spaceSm))
+					Box(modifier = Modifier.sizeIn(minWidth = 48.dp), contentAlignment = Alignment.CenterEnd) {
+						Text("${hdrGuiBrightness.coerceIn(10, 100)}%")
+					}
+				}
+			}
+		}
+
+		item {
 			var assDirectPlay by rememberPreference(userPreferences, UserPreferences.assDirectPlay)
 
 			ListButton(

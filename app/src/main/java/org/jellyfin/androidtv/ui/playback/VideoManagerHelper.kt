@@ -1,10 +1,15 @@
 package org.jellyfin.androidtv.ui.playback
 
+import android.graphics.ColorMatrix
+import android.graphics.Color
 import android.media.audiofx.AudioEffect
 import android.media.audiofx.DynamicsProcessing
 import android.media.audiofx.Equalizer
 import androidx.core.net.toUri
 import org.jellyfin.androidtv.util.AndroidVersion
+import androidx.media3.common.ColorInfo
+import androidx.media3.common.Format
+import androidx.media3.common.MimeTypes
 import org.jellyfin.playback.media3.exoplayer.mapping.getFfmpegSubtitleMimeType
 import org.jellyfin.sdk.model.api.MediaStream
 import timber.log.Timber
@@ -21,6 +26,33 @@ fun getSubtitleMediaStreamCodec(stream: MediaStream): String {
 	val urlExtensionMediaType = urlSubtitleExtension?.let { getFfmpegSubtitleMimeType(it, "") }?.ifBlank { null }
 
 	return urlExtensionMediaType ?: codecMediaType ?: urlSubtitleExtension ?: codec
+}
+
+fun Format.isHdrVideo(): Boolean =
+	colorInfo?.let { ColorInfo.isTransferHdr(it) } == true ||
+		sampleMimeType == MimeTypes.VIDEO_DOLBY_VISION
+
+fun calculateHdrGuiBrightnessFactor(isHdr: Boolean, brightnessPercent: Int): Float =
+	if (isHdr) brightnessPercent.coerceIn(10, 100) / 100f else 1f
+
+fun createHdrGuiColorMatrix(brightnessFactor: Float): ColorMatrix {
+	val factor = brightnessFactor.coerceIn(0.1f, 1f)
+	return ColorMatrix(floatArrayOf(
+		factor, 0f, 0f, 0f, 0f,
+		0f, factor, 0f, 0f, 0f,
+		0f, 0f, factor, 0f, 0f,
+		0f, 0f, 0f, 1f, 0f,
+	))
+}
+
+fun transformHdrGuiColor(color: Int, brightnessFactor: Float): Int {
+	val factor = brightnessFactor.coerceIn(0.1f, 1f)
+	return Color.argb(
+		Color.alpha(color),
+		(Color.red(color) * factor).toInt(),
+		(Color.green(color) * factor).toInt(),
+		(Color.blue(color) * factor).toInt(),
+	)
 }
 
 private var audioEffect: AudioEffect? = null

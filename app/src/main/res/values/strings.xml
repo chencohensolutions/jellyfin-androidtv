@@ -535,6 +535,8 @@
     <string name="prefer_exoplayer_ffmpeg">Prefer FFmpeg for audio playback</string>
     <string name="prefer_exoplayer_ffmpeg_content">Use FFmpeg to decode audio, even if platform codecs are available.</string>
     <string name="default_video_zoom">Default zoom mode</string>
+	<string name="hdr_gui_brightness">HDR GUI brightness</string>
+	<string name="hdr_gui_brightness_description">Adjusts GUI and subtitle brightness during HDR playback, without changing opacity or video brightness.</string>
     <string name="video_start_delay">Video start delay</string>
     <string name="playback_buffer_length">Playback buffer size</string>
     <string name="playback_buffer_auto">Auto</string>
