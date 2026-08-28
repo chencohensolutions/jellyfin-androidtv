@@ -3,7 +3,10 @@ package org.jellyfin.androidtv.ui.playback;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Typeface;
+import android.os.Build;
 import android.media.audiofx.DynamicsProcessing;
 import android.media.audiofx.DynamicsProcessing.Limiter;
 import android.media.audiofx.Equalizer;
@@ -84,6 +87,8 @@ public class VideoManager {
     private PlaybackOverlayFragmentHelper _helper;
     public ExoPlayer mExoPlayer;
     private PlayerView mExoPlayerView;
+    private ViewGroup mGuiOverlay;
+    private SubtitleView mSubtitleView;
     private Handler mHandler = new Handler();
 
     private long mMetaDuration = -1;
@@ -120,6 +125,7 @@ public class VideoManager {
         }
 
         mExoPlayerView = view.findViewById(R.id.exoPlayerView);
+        mGuiOverlay = view.findViewById(R.id.gui_overlay);
         mExoPlayerView.setPlayer(mExoPlayer);
         int strokeColor = userPreferences.get(UserPreferences.Companion.getSubtitleTextStrokeColor()).intValue();
         int textWeight = userPreferences.get(UserPreferences.Companion.getSubtitlesTextWeight());
@@ -133,6 +139,7 @@ public class VideoManager {
         );
 
         SubtitleView subtitleView = mExoPlayerView.getSubtitleView();
+        mSubtitleView = subtitleView;
         if (subtitleView != null) {
             // By default the subtitle view lives inside PlayerView's aspect-ratio-constrained content frame,
             // so its size/position fractions (e.g. bottom padding) are relative to the letterboxed video instead
@@ -210,8 +217,44 @@ public class VideoManager {
             @Override
             public void onTracksChanged(Tracks tracks) {
                 Timber.d("Tracks changed");
+
+                boolean isHdr = false;
+                for (Tracks.Group group : tracks.getGroups()) {
+                    if (group.getType() != C.TRACK_TYPE_VIDEO) continue;
+
+                    TrackGroup trackGroup = group.getMediaTrackGroup();
+                    for (int i = 0; i < trackGroup.length; i++) {
+                        if (group.isTrackSelected(i) && VideoManagerHelperKt.isHdrVideo(trackGroup.getFormat(i))) {
+                            isHdr = true;
+                            break;
+                        }
+                    }
+
+                    if (isHdr) break;
+                }
+
+                float alpha = VideoManagerHelperKt.calculateHdrGuiAlpha(
+                        isHdr,
+                        userPreferences.get(UserPreferences.Companion.getHdrGuiBrightness()).intValue()
+                );
+                applyBrightness(mGuiOverlay, alpha);
+                if (mSubtitleView != null) {
+                    applyBrightness(mSubtitleView, alpha);
+                }
             }
         });
+    }
+
+    private void applyBrightness(View view, float brightness) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return;
+
+        ColorMatrix matrix = new ColorMatrix(new float[]{
+                brightness, 0f, 0f, 0f, 0f,
+                0f, brightness, 0f, 0f, 0f,
+                0f, 0f, brightness, 0f, 0f,
+                0f, 0f, 0f, 1f, 0f,
+        });
+        view.setRenderEffect(android.graphics.RenderEffect.createColorFilterEffect(new ColorMatrixColorFilter(matrix)));
     }
 
     public void subscribe(@NonNull PlaybackControllerNotifiable notifier) {

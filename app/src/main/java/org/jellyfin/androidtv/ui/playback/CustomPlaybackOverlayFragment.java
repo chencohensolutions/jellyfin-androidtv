@@ -194,7 +194,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
 
         // And the Live Guide element
         tvGuideBinding = OverlayTvGuideBinding.inflate(inflater, container, false);
-        binding.getRoot().addView(tvGuideBinding.getRoot());
+        binding.guiOverlay.addView(tvGuideBinding.getRoot());
         tvGuideBinding.getRoot().setVisibility(View.GONE);
 
         binding.getRoot().setOnTouchListener((v, event) -> {

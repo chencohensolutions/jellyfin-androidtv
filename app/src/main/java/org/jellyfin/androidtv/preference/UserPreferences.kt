@@ -107,6 +107,11 @@ class UserPreferences(context: Context) : SharedPreferenceStore(
 		var preferExoPlayerFfmpeg = booleanPreference("exoplayer_prefer_ffmpeg", defaultValue = false)
 
 		/**
+		 * Opacity of playback UI and subtitles while HDR video is playing.
+		 */
+		var hdrGuiBrightness = intPreference("hdr_gui_brightness", 100)
+
+		/**
 		 * User defined AVC level override. AUTO uses device-reported capabilities.
 		 */
 		var userAVCLevel = enumPreference("user_avc_level", AVCLevel.AUTO)

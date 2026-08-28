@@ -3,11 +3,37 @@ package org.jellyfin.androidtv.ui.playback
 import android.media.audiofx.AudioEffect
 import android.media.audiofx.DynamicsProcessing
 import android.media.audiofx.Equalizer
+import android.graphics.Color
 import androidx.core.net.toUri
+import androidx.media3.common.ColorInfo
+import androidx.media3.common.Format
+import androidx.media3.common.MimeTypes
 import org.jellyfin.androidtv.util.AndroidVersion
 import org.jellyfin.playback.media3.exoplayer.mapping.getFfmpegSubtitleMimeType
 import org.jellyfin.sdk.model.api.MediaStream
 import timber.log.Timber
+
+private const val MIN_HDR_GUI_BRIGHTNESS = 10
+private const val MAX_HDR_GUI_BRIGHTNESS = 100
+
+fun Format.isHdrVideo(): Boolean {
+	return ColorInfo.isTransferHdr(colorInfo) || sampleMimeType == MimeTypes.VIDEO_DOLBY_VISION
+}
+
+fun calculateHdrGuiAlpha(isHdr: Boolean, brightnessPercent: Int): Float {
+	if (!isHdr) return 1f
+
+	return brightnessPercent.coerceIn(MIN_HDR_GUI_BRIGHTNESS, MAX_HDR_GUI_BRIGHTNESS) / 100f
+}
+
+fun dimColor(color: Int, brightness: Float): Int {
+	return Color.argb(
+		Color.alpha(color),
+		(Color.red(color) * brightness).toInt(),
+		(Color.green(color) * brightness).toInt(),
+		(Color.blue(color) * brightness).toInt(),
+	)
+}
 
 /**
  * Return the media type for the codec found in this media stream. First tries to infer the media type from the streams delivery URL and
