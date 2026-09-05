@@ -93,21 +93,21 @@ The Android TV device profile advertises:
 - WebVTT/VTT as embedded, external, and HLS subtitle delivery.
 - SRT, SubRip, and TTML as embedded or external delivery.
 
-The server's HLS manifest can include text subtitle metadata. Non-WebVTT text subtitles are deliberately requested through Jellyfin's standalone external subtitle endpoint instead of forcing server conversion to WebVTT. Image subtitles such as PGS are not handled as standalone external text tracks by this path; they remain embedded or require burning in according to the negotiated delivery method.
+The server's HLS manifest can include text subtitle metadata. Non-WebVTT text subtitles are deliberately requested through Jellyfin's standalone external subtitle endpoint instead of forcing server conversion to WebVTT. PGS/PGSSUB is advertised as standalone external delivery when `pgsDirectPlay` is enabled; otherwise Jellyfin can use embedded or `ENCODE` delivery.
 
 ### Client composition
 
 A custom direct HLS factory bypasses Media3's normal `DefaultMediaSourceFactory` subtitle composition. `DoviMediaSourceFactory` restores that required behavior:
 
 1. It creates the Dolby Vision-compatible HLS media source.
-2. It creates one progressive subtitle media source for the selected external subtitle configuration.
+2. It creates one progressive subtitle media source for each attached external subtitle configuration.
 3. It parses that subtitle with the configured `SubtitleParser.Factory`.
 4. `SubtitleExtractor` produces `application/x-media3-cues` samples.
 5. It joins the HLS source and subtitle source with `MergingMediaSource`.
 
 Using cue samples is required because legacy text decoding is disabled in the Media3 renderer. Passing raw `application/x-subrip` samples through `SingleSampleMediaSource` causes a runtime failure because the renderer expects `application/x-media3-cues`.
 
-Only the selected external subtitle is attached for a playback session. Attaching every available external subtitle starts simultaneous HTTP requests and can delay or time out HLS video startup on the Jellyfin server.
+The Advanced Playback setting `Preload all external subtitles` controls attachment policy. It is disabled by default. In the default lazy mode, only the selected external subtitle is attached. When enabled, every compatible external subtitle returned by Jellyfin is attached before preparation, allowing Media3 to switch among prepared tracks without recreating the HLS stream. This may start simultaneous subtitle requests and can increase startup work.
 
 ### Selection behavior
 
@@ -115,7 +115,7 @@ External subtitle track IDs use `JF_EXTERNAL:<stream index>`. After Media3 merge
 
 When playback becomes ready, the controller force-enables the attached external cue track by matching the ID suffix. This forced selection does not restart playback.
 
-When the user changes to another external subtitle, the controller:
+In lazy mode, when the user changes to another external subtitle, the controller:
 
 1. Stops the current playback session.
 2. Updates `subtitleStreamIndex`.
@@ -123,7 +123,7 @@ When the user changes to another external subtitle, the controller:
 4. Attaches only the newly selected external subtitle source.
 5. Starts playback and force-enables that now-attached cue track after preparation.
 
-This restart is intentional. It prevents all subtitle tracks from being fetched up front while allowing the user to select any external text subtitle from the existing subtitle menu.
+This restart is intentional and avoids fetching every subtitle up front. In preload mode, the controller instead applies a `TrackSelectionOverride` to the already prepared external subtitle group. The HLS video source is not recreated and playback remains continuous. If the requested external track is not present in the prepared source graph, the controller falls back to the lazy restart path.
 
 Embedded and HLS subtitle tracks continue to use Media3 track-group selection without a playback restart. Subtitles that Jellyfin negotiates as `ENCODE`, or which must be burned in, restart playback with subtitle baking enabled.
 
@@ -133,7 +133,7 @@ A successful HLS profile 7 playback should show all of the following in Logcat:
 
 - A `DoviCompatReport` converting `dvhe.07.*` to `dvhe.08.*`.
 - A video input format using `video/dolby-vision` with a `dvhe.08.*` codec.
-- One selected external subtitle source, if an external subtitle is selected.
+- In lazy mode, one selected external subtitle source when an external subtitle is selected; in preload mode, one source per compatible external subtitle.
 - A text `TrackGroup` with `mimeType=application/x-media3-cues` and an ID ending in `JF_EXTERNAL:<stream index>`.
 - `renderedFirstFrame` and player state `READY` without an `ExoPlaybackException`.
 

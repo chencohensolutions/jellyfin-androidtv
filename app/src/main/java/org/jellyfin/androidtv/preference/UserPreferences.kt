@@ -61,6 +61,11 @@ class UserPreferences(context: Context) : SharedPreferenceStore(
 		var directStreamSelectedAudio = booleanPreference("direct_stream_selected_audio", false)
 
 		/**
+		 * Attach all compatible external subtitles before HLS playback starts.
+		 */
+		var preloadExternalSubtitles = booleanPreference("preload_external_subtitles", false)
+
+		/**
 		 * Auto-play next item
 		 */
 		var mediaQueuingEnabled = booleanPreference("pref_enable_tv_queuing", true)

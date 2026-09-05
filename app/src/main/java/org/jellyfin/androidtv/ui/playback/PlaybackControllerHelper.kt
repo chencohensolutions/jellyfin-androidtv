@@ -8,6 +8,7 @@ import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jellyfin.androidtv.preference.UserPreferences
 import org.jellyfin.androidtv.ui.playback.segment.MediaSegmentAction
 import org.jellyfin.androidtv.ui.playback.segment.MediaSegmentRepository
 import org.jellyfin.androidtv.util.sdk.end
@@ -20,6 +21,8 @@ import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.SubtitleDeliveryMethod
 import org.koin.android.ext.android.inject
 import timber.log.Timber
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.UUID
 
 fun PlaybackController.getLiveTvChannel(
@@ -99,6 +102,8 @@ fun PlaybackController.setSubtitleIndex(index: Int, force: Boolean = false) {
 			return setSubtitleIndex(-1)
 		}
 
+		val userPreferences by fragment.inject<UserPreferences>()
+		val preloadExternalSubtitles = userPreferences[UserPreferences.preloadExternalSubtitles]
 		when {
 			stream.deliveryMethod == SubtitleDeliveryMethod.ENCODE || shouldBurnInSubtitles(currentStreamInfo.playMethod) -> {
 				Timber.i("Restarting playback for subtitle baking")
@@ -109,12 +114,30 @@ fun PlaybackController.setSubtitleIndex(index: Int, force: Boolean = false) {
 				play(mCurrentPosition, index)
 			}
 
-			stream.deliveryMethod == SubtitleDeliveryMethod.EXTERNAL && !force -> {
-				Timber.i("Restarting playback for external subtitle selection")
+			stream.deliveryMethod == SubtitleDeliveryMethod.EXTERNAL && !force && !preloadExternalSubtitles -> {
+				val api by fragment.inject<ApiClient>()
+				val deliveryUrl = stream.deliveryUrl ?: run {
+					Timber.w("External subtitle $index has no delivery URL")
+					return setSubtitleIndex(-1)
+				}
+				val subtitleUrl = api.createUrl(deliveryUrl, ignorePathParameters = true)
+				val playbackPosition = mCurrentPosition
+				Timber.i("Preparing external subtitle $index before restarting playback")
 
-				stop()
-				mCurrentOptions.subtitleStreamIndex = index
-				play(mCurrentPosition, index)
+				fragment.lifecycleScope.launch {
+					val prepared = withContext(Dispatchers.IO) {
+						runCatching { prepareExternalSubtitle(subtitleUrl) }
+							.onFailure { Timber.e(it, "Failed to prepare external subtitle $index") }
+							.isSuccess
+					}
+
+					if (!prepared) return@launch
+
+					Timber.i("Restarting playback with prepared external subtitle $index")
+					stop()
+					mCurrentOptions.subtitleStreamIndex = index
+					play(playbackPosition, index)
+				}
 			}
 
 			stream.deliveryMethod == SubtitleDeliveryMethod.EXTERNAL ||
@@ -145,6 +168,13 @@ fun PlaybackController.setSubtitleIndex(index: Int, force: Boolean = false) {
 
 				if (group == null) {
 					Timber.w("Failed to find correct subtitle group for method ${stream.deliveryMethod}")
+					if (stream.deliveryMethod == SubtitleDeliveryMethod.EXTERNAL && preloadExternalSubtitles) {
+						Timber.i("Preloaded external subtitle is unavailable; restarting playback")
+						stop()
+						mCurrentOptions.subtitleStreamIndex = index
+						play(mCurrentPosition, index)
+						return
+					}
 					return setSubtitleIndex(-1)
 				}
 
@@ -164,6 +194,22 @@ fun PlaybackController.setSubtitleIndex(index: Int, force: Boolean = false) {
 				setSubtitleIndex(-1)
 			}
 		}
+	}
+}
+
+private fun prepareExternalSubtitle(url: String) {
+	val connection = URL(url).openConnection() as HttpURLConnection
+	connection.connectTimeout = 60_000
+	connection.readTimeout = 60_000
+	connection.requestMethod = "GET"
+
+	try {
+		check(connection.responseCode in 200..299) {
+			"Subtitle preparation request returned HTTP ${connection.responseCode}"
+		}
+		connection.inputStream.close()
+	} finally {
+		connection.disconnect()
 	}
 }
 

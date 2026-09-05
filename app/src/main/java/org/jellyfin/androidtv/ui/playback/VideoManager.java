@@ -67,6 +67,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import io.github.peerless2012.ass.media.AssHandler;
 import io.github.peerless2012.ass.media.AssHandlerConfig;
@@ -100,6 +102,7 @@ public class VideoManager {
 
     private final UserPreferences userPreferences = KoinJavaComponent.get(UserPreferences.class);
     private final HttpDataSource.Factory exoPlayerHttpDataSourceFactory = KoinJavaComponent.get(HttpDataSource.Factory.class);
+    private final ExecutorService subtitlePreparationExecutor = Executors.newSingleThreadExecutor();
 
     public VideoManager(@NonNull Activity activity, @NonNull View view, @NonNull PlaybackOverlayFragmentHelper helper) {
         mActivity = activity;
@@ -229,6 +232,7 @@ public class VideoManager {
      */
     private ExoPlayer.Builder configureExoplayerBuilder(Context context, AssHandler assHandler) {
         ExoPlayer.Builder exoPlayerBuilder = new ExoPlayer.Builder(context);
+        exoPlayerBuilder.setStuckBufferingDetectionTimeoutMs(30_000);
         DefaultRenderersFactory defaultRendererFactory = new DefaultRenderersFactory(context);
         defaultRendererFactory.setEnableDecoderFallback(true);
         defaultRendererFactory.setExtensionRendererMode(determineExoPlayerExtensionRendererMode());
@@ -409,11 +413,12 @@ public class VideoManager {
         try {
             Integer selectedSubtitleIndex = streamInfo.getMediaSource().getDefaultSubtitleStreamIndex();
             List<MediaItem.SubtitleConfiguration> subtitleConfigurations = new ArrayList<>();
+            boolean preloadExternalSubtitles = userPreferences.get(UserPreferences.Companion.getPreloadExternalSubtitles());
             for (MediaStream mediaStream : streamInfo.getMediaSource().getMediaStreams()) {
                 if (mediaStream.getType() != MediaStreamType.SUBTITLE) continue;
 
                 if (mediaStream.getDeliveryMethod() == SubtitleDeliveryMethod.EXTERNAL &&
-                        selectedSubtitleIndex != null && selectedSubtitleIndex.equals(mediaStream.getIndex())) {
+                        (preloadExternalSubtitles || selectedSubtitleIndex != null && selectedSubtitleIndex.equals(mediaStream.getIndex()))) {
                     Uri subtitleUri = Uri.parse(api.createUrl(mediaStream.getDeliveryUrl(), Collections.emptyMap(), Collections.emptyMap(), true));
                     MediaItem.SubtitleConfiguration subtitleConfiguration = new MediaItem.SubtitleConfiguration.Builder(subtitleUri)
                             .setId("JF_EXTERNAL:" + String.valueOf(mediaStream.getIndex()))
@@ -434,9 +439,42 @@ public class VideoManager {
 
             mExoPlayer.setMediaItem(mediaItem);
             mExoPlayer.prepare();
+            if (preloadExternalSubtitles) {
+                prepareEmbeddedSubtitles(api, streamInfo);
+            }
         } catch (IllegalStateException e) {
             Timber.e(e, "Unable to set video path.  Probably backing out.");
         }
+    }
+
+    private void prepareEmbeddedSubtitles(ApiClient api, StreamInfo streamInfo) {
+        MediaStream stream = streamInfo.getMediaSource().getMediaStreams().stream()
+                .filter(mediaStream -> mediaStream.getType() == MediaStreamType.SUBTITLE)
+                .filter(mediaStream -> mediaStream.getDeliveryMethod() == SubtitleDeliveryMethod.EXTERNAL)
+                .filter(mediaStream -> !mediaStream.isExternal())
+                .filter(mediaStream -> mediaStream.getDeliveryUrl() != null)
+                .findFirst()
+                .orElse(null);
+        if (stream == null) {
+            return;
+        }
+
+        String subtitleUrl = api.createUrl(stream.getDeliveryUrl(), Collections.emptyMap(), Collections.emptyMap(), true);
+        subtitlePreparationExecutor.execute(() -> {
+            HttpDataSource dataSource = exoPlayerHttpDataSourceFactory.createDataSource();
+            try {
+                dataSource.open(new androidx.media3.datasource.DataSpec(Uri.parse(subtitleUrl)));
+                Timber.i("Prepared embedded subtitle cache using stream %s", stream.getIndex());
+            } catch (Exception e) {
+                Timber.d(e, "Unable to prepare embedded subtitle cache");
+            } finally {
+                try {
+                    dataSource.close();
+                } catch (Exception e) {
+                    Timber.d(e, "Unable to close subtitle preparation request");
+                }
+            }
+        });
     }
 
     private int offsetStreamIndex(int index, boolean adjustByAdding, @Nullable List<org.jellyfin.sdk.model.api.MediaStream> allStreams) {
@@ -617,6 +655,7 @@ public class VideoManager {
         mPlaybackControllerNotifiable = null;
         resetHdrGuiBrightness();
         stopPlayback();
+        subtitlePreparationExecutor.shutdownNow();
         releasePlayer();
     }
 

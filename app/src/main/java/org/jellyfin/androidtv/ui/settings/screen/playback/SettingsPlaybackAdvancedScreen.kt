@@ -148,6 +148,18 @@ fun SettingsPlaybackAdvancedScreen() {
 		}
 
 		item {
+			var preloadExternalSubtitles by rememberPreference(userPreferences, UserPreferences.preloadExternalSubtitles)
+
+			ListButton(
+				headingContent = { Text(stringResource(R.string.preload_external_subtitles)) },
+				captionContent = { Text(stringResource(R.string.preload_external_subtitles_description)) },
+				trailingContent = { Checkbox(checked = preloadExternalSubtitles) },
+				onClick = { preloadExternalSubtitles = !preloadExternalSubtitles },
+				modifier = Modifier.focusKey("preload_external_subtitles")
+			)
+		}
+
+		item {
 			var refreshRateSwitchingBehavior by rememberPreference(userPreferences, UserPreferences.refreshRateSwitchingBehavior)
 
 			ListButton(

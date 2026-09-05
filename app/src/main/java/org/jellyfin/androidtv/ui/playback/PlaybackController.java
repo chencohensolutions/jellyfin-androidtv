@@ -661,7 +661,14 @@ public class PlaybackController implements PlaybackControllerNotifiable {
 
         // get subtitle info - prefer saved language preference over server default
         String lastSubtitleLanguage = videoQueueManager.getValue().getLastPlayedSubtitleLanguageIsoCode();
-        if (lastSubtitleLanguage != null) {
+        Integer requestedSubtitleIndex = mCurrentOptions.getSubtitleStreamIndex();
+        boolean requestedSubtitleAvailable = requestedSubtitleIndex != null &&
+                (requestedSubtitleIndex == -1 || response.getMediaSource().getMediaStreams().stream()
+                        .anyMatch(stream -> stream.getType() == MediaStreamType.SUBTITLE &&
+                                requestedSubtitleIndex.equals(stream.getIndex())));
+        if (requestedSubtitleAvailable) {
+            Timber.i("preserving requested subtitle index %s", requestedSubtitleIndex);
+        } else if (lastSubtitleLanguage != null) {
             if (lastSubtitleLanguage.isEmpty()) {
                 // User explicitly disabled subtitles
                 mCurrentOptions.setSubtitleStreamIndex(null);
