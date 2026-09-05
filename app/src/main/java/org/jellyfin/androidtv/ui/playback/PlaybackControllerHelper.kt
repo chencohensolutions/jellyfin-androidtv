@@ -109,17 +109,21 @@ fun PlaybackController.setSubtitleIndex(index: Int, force: Boolean = false) {
 				play(mCurrentPosition, index)
 			}
 
+			stream.deliveryMethod == SubtitleDeliveryMethod.EXTERNAL && !force -> {
+				Timber.i("Restarting playback for external subtitle selection")
+
+				stop()
+				mCurrentOptions.subtitleStreamIndex = index
+				play(mCurrentPosition, index)
+			}
+
 			stream.deliveryMethod == SubtitleDeliveryMethod.EXTERNAL ||
-				stream.deliveryMethod == SubtitleDeliveryMethod.EMBED ||
+			stream.deliveryMethod == SubtitleDeliveryMethod.EMBED ||
 				stream.deliveryMethod == SubtitleDeliveryMethod.HLS -> {
-				// External subtitles need to be resolved differently
 				val group = if (stream.deliveryMethod == SubtitleDeliveryMethod.EXTERNAL) {
 					mVideoManager.mExoPlayer.currentTracks.groups.firstOrNull { group ->
-						// Verify this is a group with a single format (the subtitles) that is added by us. Because ExoPlayer uses a
-						// MergingMediaSource, each external subtitle format id is prefixed with its source index (normally starting at 1,
-						// increasing for each external subttitle). So we only check the end of the id
 						group.length == 1 && group.getTrackFormat(0).id?.endsWith(":JF_EXTERNAL:$index") == true
-					}
+					}?.mediaTrackGroup
 				} else {
 					// The server does not send a reliable index in all cases, so calculate it manually
 					val localIndex = mediaSource.mediaStreams.orEmpty()
@@ -135,9 +139,9 @@ fun PlaybackController.setSubtitleIndex(index: Int, force: Boolean = false) {
 
 					mVideoManager.mExoPlayer.currentTracks.groups
 						.filter { it.type == C.TRACK_TYPE_TEXT }
-						.filterNot { it.length == 1 && it.getTrackFormat(0).id?.endsWith(":JF_EXTERNAL:$index") == true }
 						.getOrNull(localIndex)
-				}?.mediaTrackGroup
+						?.mediaTrackGroup
+				}
 
 				if (group == null) {
 					Timber.w("Failed to find correct subtitle group for method ${stream.deliveryMethod}")

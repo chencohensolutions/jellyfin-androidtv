@@ -117,7 +117,12 @@ class ExoPlayerBackend(
 				setSubtitleParserFactory(assSubtitleParserFactory)
 			}
 		} else DefaultMediaSourceFactory(dataSourceFactory, doviExtractorsFactory)
-		val mediaSourceFactory = DoviMediaSourceFactory(progressiveMediaSourceFactory, hlsMediaSourceFactory)
+		val mediaSourceFactory = DoviMediaSourceFactory(
+			progressiveMediaSourceFactory,
+			hlsMediaSourceFactory,
+			dataSourceFactory,
+			assSubtitleParserFactory,
+		)
 
 		val renderersFactory = DefaultRenderersFactory(context).apply {
 			setEnableDecoderFallback(true)

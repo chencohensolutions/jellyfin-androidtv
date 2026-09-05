@@ -543,6 +543,21 @@ public class PlaybackController implements PlaybackControllerNotifiable {
         if (!isLiveTv && currentMediaSource != null) {
             internalOptions.setMediaSourceId(currentMediaSource.getId());
         }
+        if (internalOptions.getSubtitleStreamIndex() == null && currentMediaSource != null) {
+            String lastSubtitleLanguage = videoQueueManager.getValue().getLastPlayedSubtitleLanguageIsoCode();
+            if (lastSubtitleLanguage != null && lastSubtitleLanguage.isEmpty()) {
+                internalOptions.setSubtitleStreamIndex(-1);
+            } else if (lastSubtitleLanguage != null && currentMediaSource.getMediaStreams() != null) {
+                for (MediaStream stream : currentMediaSource.getMediaStreams()) {
+                    if (stream.getType() == MediaStreamType.SUBTITLE && lastSubtitleLanguage.equals(stream.getLanguage())) {
+                        internalOptions.setSubtitleStreamIndex(stream.getIndex());
+                        break;
+                    }
+                }
+            } else {
+                internalOptions.setSubtitleStreamIndex(currentMediaSource.getDefaultSubtitleStreamIndex());
+            }
+        }
         DeviceProfile internalProfile = DeviceProfileKt.createDeviceProfile(
                 mFragment.getContext(),
                 userPreferences.getValue(),

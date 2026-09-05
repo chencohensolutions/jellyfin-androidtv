@@ -44,6 +44,7 @@ import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
 import androidx.media3.exoplayer.util.EventLogger;
 import androidx.media3.extractor.DefaultExtractorsFactory;
 import androidx.media3.extractor.ExtractorsFactory;
+import androidx.media3.extractor.text.DefaultSubtitleParserFactory;
 import androidx.media3.extractor.ts.TsExtractor;
 import androidx.media3.ui.AspectRatioFrameLayout;
 import androidx.media3.ui.CaptionStyleCompat;
@@ -252,12 +253,12 @@ public class VideoManager {
             ExtractorsFactory assExtractorsFactory = AssPlayerKt.withAssMkvSupport(extractorsFactory, assSubtitleParserFactory, assHandler);
             DefaultMediaSourceFactory mediaSourceFactory = new DefaultMediaSourceFactory(dataSourceFactory, DoviCompat.wrap(assExtractorsFactory));
             mediaSourceFactory.setSubtitleParserFactory(assSubtitleParserFactory);
-            exoPlayerBuilder.setMediaSourceFactory(new DoviMediaSourceFactory(mediaSourceFactory, DoviCompat.createHlsMediaSourceFactory(dataSourceFactory)));
+            exoPlayerBuilder.setMediaSourceFactory(new DoviMediaSourceFactory(mediaSourceFactory, DoviCompat.createHlsMediaSourceFactory(dataSourceFactory), dataSourceFactory, assSubtitleParserFactory));
             exoPlayerBuilder.setRenderersFactory(new AssRenderersFactory(assHandler, defaultRendererFactory));
         } else {
             exoPlayerBuilder.setRenderersFactory(defaultRendererFactory);
             DefaultMediaSourceFactory mediaSourceFactory = new DefaultMediaSourceFactory(dataSourceFactory, DoviCompat.wrap(extractorsFactory));
-            exoPlayerBuilder.setMediaSourceFactory(new DoviMediaSourceFactory(mediaSourceFactory, DoviCompat.createHlsMediaSourceFactory(dataSourceFactory)));
+            exoPlayerBuilder.setMediaSourceFactory(new DoviMediaSourceFactory(mediaSourceFactory, DoviCompat.createHlsMediaSourceFactory(dataSourceFactory), dataSourceFactory, new DefaultSubtitleParserFactory()));
         }
 
         BufferLength bufferLength = userPreferences.get(UserPreferences.Companion.getBufferLength());
@@ -392,8 +393,8 @@ public class VideoManager {
 
     private int getSubtitleSelectionFlags(MediaStream mediaStream) {
         int flags = 0;
-        if (mediaStream.isDefault()) flags &= C.SELECTION_FLAG_DEFAULT;
-        if (mediaStream.isForced()) flags &= C.SELECTION_FLAG_FORCED;
+        if (mediaStream.isDefault()) flags |= C.SELECTION_FLAG_DEFAULT;
+        if (mediaStream.isForced()) flags |= C.SELECTION_FLAG_FORCED;
         return flags;
     }
 
@@ -406,12 +407,13 @@ public class VideoManager {
         Timber.i("Video path set to: %s", path);
 
         try {
-            // Add external subtitles
+            Integer selectedSubtitleIndex = streamInfo.getMediaSource().getDefaultSubtitleStreamIndex();
             List<MediaItem.SubtitleConfiguration> subtitleConfigurations = new ArrayList<>();
             for (MediaStream mediaStream : streamInfo.getMediaSource().getMediaStreams()) {
                 if (mediaStream.getType() != MediaStreamType.SUBTITLE) continue;
 
-                if (mediaStream.getDeliveryMethod() == SubtitleDeliveryMethod.EXTERNAL) {
+                if (mediaStream.getDeliveryMethod() == SubtitleDeliveryMethod.EXTERNAL &&
+                        selectedSubtitleIndex != null && selectedSubtitleIndex.equals(mediaStream.getIndex())) {
                     Uri subtitleUri = Uri.parse(api.createUrl(mediaStream.getDeliveryUrl(), Collections.emptyMap(), Collections.emptyMap(), true));
                     MediaItem.SubtitleConfiguration subtitleConfiguration = new MediaItem.SubtitleConfiguration.Builder(subtitleUri)
                             .setId("JF_EXTERNAL:" + String.valueOf(mediaStream.getIndex()))
