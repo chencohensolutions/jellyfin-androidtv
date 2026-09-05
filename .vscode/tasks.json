@@ -1,0 +1,37 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "build release",
+			"type": "process",
+			"command": "${workspaceFolder}/gradlew.bat",
+			"args": [
+				":app:assembleRelease"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			}
+		},
+		{
+			"label": "install release",
+			"type": "process",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$apk = Get-ChildItem '${workspaceFolder}/app/build/outputs/apk/release' -Filter '*-release-local.apk' | Select-Object -First 1; if ($null -eq $apk) { throw 'Release APK not found' }; adb install -r $apk.FullName; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			}
+		},
+		{
+			"label": "build and install release",
+			"dependsOn": [
+				"build release",
+				"install release"
+			],
+			"dependsOrder": "sequence"
+		}
+	]
+}
