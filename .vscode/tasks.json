@@ -32,6 +32,38 @@
 				"install release"
 			],
 			"dependsOrder": "sequence"
+		},
+		{
+			"label": "build release debug",
+			"type": "process",
+			"command": "${workspaceFolder}/gradlew.bat",
+			"args": [
+				":app:assembleReleaseDebug"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			}
+		},
+		{
+			"label": "install release debug",
+			"type": "process",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$apk = Get-ChildItem '${workspaceFolder}/app/build/outputs/apk/releaseDebug' -Filter '*-releaseDebug.apk' | Sort-Object LastWriteTime -Descending | Select-Object -First 1; if ($null -eq $apk) { throw 'Release debug APK was not found. Run the build release debug task first.' }; adb -s '${input:androidDevice}' install -r $apk.FullName; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			}
+		},
+		{
+			"label": "build and install release debug",
+			"dependsOn": [
+				"build release debug",
+				"install release debug"
+			],
+			"dependsOrder": "sequence"
 		}
 	],
 	"inputs": [

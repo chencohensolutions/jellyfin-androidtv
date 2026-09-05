@@ -84,6 +84,22 @@ android {
 
 			buildConfigField("boolean", "DEVELOPMENT", (defaultConfig.versionCode!! < 100).toString())
 		}
+
+		create("benchmark") {
+			initWith(getByName("release"))
+			applicationIdSuffix = ".benchmark"
+			isDebuggable = false
+			matchingFallbacks += listOf("release")
+		}
+
+		create("releaseDebug") {
+			initWith(getByName("release"))
+			applicationIdSuffix = ".release_debug"
+			signingConfig = signingConfigs.getByName("debug")
+			isMinifyEnabled = false
+			isShrinkResources = false
+			matchingFallbacks += listOf("release")
+		}
 	}
 
 	lint {
