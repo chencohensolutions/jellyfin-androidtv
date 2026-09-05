@@ -10,6 +10,13 @@ android {
 		minSdk = libs.versions.android.minSdk.get().toInt()
 	}
 
+	externalNativeBuild {
+		cmake {
+			path = file("src/main/cpp/CMakeLists.txt")
+			version = "3.22.1"
+		}
+	}
+
 	lint {
 		lintConfig = file("$rootDir/android-lint.xml")
 		abortOnError = false

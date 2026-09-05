@@ -132,6 +132,7 @@ fun createDeviceProfile(
 	// HEVC
 	val supportsHevcDolbyVision = mediaTest.supportsHevcDolbyVision()
 	val supportsHevcDolbyVisionEL = mediaTest.supportsHevcDolbyVisionEL()
+	val supportsHevcDolbyVisionProfile8 = mediaTest.supportsHevcDolbyVisionProfile8()
 	val supportsHevcHDR10 = mediaTest.supportsHevcHDR10()
 	val supportsHevcHDR10Plus = mediaTest.supportsHevcHDR10Plus()
 
@@ -447,7 +448,7 @@ fun createDeviceProfile(
 	val unsupportedRangeTypesHevc = buildSet {
 		add(VideoRangeType.DOVI_INVALID)
 
-		if (!supportsHevcDolbyVisionEL) {
+		if (!supportsHevcDolbyVisionEL && !supportsHevcDolbyVisionProfile8) {
 			if (
 				!KnownDefects.unreportedDoviProfile7Support ||
 				!supportsHevcDolbyVision ||

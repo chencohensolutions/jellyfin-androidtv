@@ -18,6 +18,8 @@ import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.hls.DefaultHlsExtractorFactory
+import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.util.EventLogger
@@ -88,14 +90,34 @@ class ExoPlayerBackend(
 			setConstantBitrateSeekingEnabled(true)
 			setConstantBitrateSeekingAlwaysEnabled(true)
 		}
+		val assSubtitleParserFactory = AssSubtitleParserFactory(assHandler)
+		val doviExtractorsFactory = DoviCompatExtractorsFactory(
+			delegate = extractorsFactory.withMoonfinMkvSupport(assSubtitleParserFactory, assHandler),
+			mode = DoviCompatibility::mode,
+			convertNal62 = DoviRpu::convertP7NalToP8,
+			onReport = { report ->
+				Timber.d("Dolby Vision compatibility: $report")
+			},
+		)
+		val doviHlsExtractorsFactory = DoviCompatHlsExtractorFactory(
+			delegate = DefaultHlsExtractorFactory(),
+			mode = DoviCompatibility::mode,
+			convertNal62 = DoviRpu::convertP7NalToP8,
+			onReport = { report ->
+				Timber.d("Dolby Vision HLS compatibility: $report")
+			},
+		)
+		val hlsMediaSourceFactory = HlsMediaSource.Factory(dataSourceFactory)
+			.setExtractorFactory(doviHlsExtractorsFactory)
+			.setSubtitleParserFactory(assSubtitleParserFactory)
+			.setAllowChunklessPreparation(false)
 
-		val mediaSourceFactory = if (exoPlayerOptions.enableLibass) {
-			val assSubtitleParserFactory = AssSubtitleParserFactory(assHandler)
-			val assExtractorsFactory = extractorsFactory.withAssMkvSupport(assSubtitleParserFactory, assHandler)
-			DefaultMediaSourceFactory(dataSourceFactory, assExtractorsFactory).apply {
+		val progressiveMediaSourceFactory = if (exoPlayerOptions.enableLibass) {
+			DefaultMediaSourceFactory(dataSourceFactory, doviExtractorsFactory).apply {
 				setSubtitleParserFactory(assSubtitleParserFactory)
 			}
-		} else DefaultMediaSourceFactory(dataSourceFactory, extractorsFactory)
+		} else DefaultMediaSourceFactory(dataSourceFactory, doviExtractorsFactory)
+		val mediaSourceFactory = DoviMediaSourceFactory(progressiveMediaSourceFactory, hlsMediaSourceFactory)
 
 		val renderersFactory = DefaultRenderersFactory(context).apply {
 			setEnableDecoderFallback(true)

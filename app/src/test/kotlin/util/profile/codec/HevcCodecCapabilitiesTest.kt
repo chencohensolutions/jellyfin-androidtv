@@ -16,6 +16,7 @@ class HevcCodecCapabilitiesTest : FunSpec({
 	val mimeDolbyVision = MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION
 	val apiN = Build.VERSION_CODES.N
 	val apiQ = Build.VERSION_CODES.Q
+	val apiOMr1 = Build.VERSION_CODES.O_MR1
 
 	beforeEach {
 		mockkObject(AndroidVersion)
@@ -105,6 +106,25 @@ class HevcCodecCapabilitiesTest : FunSpec({
 			every { hasDecoder(mimeDolbyVision, CodecProfileLevel.DolbyVisionProfileDvheDtb, CodecProfileLevel.DolbyVisionLevelHd24) } returns false
 		}
 		HevcCodecCapabilities(query).supportsHevcDolbyVisionEL() shouldBe false
+	}
+
+	test("supportsHevcDolbyVisionProfile8 returns true when the device has a Profile 8 decoder") {
+		every { AndroidVersion.sdkInt } returns apiOMr1
+		val query = mockk<MediaCodecQuery> {
+			every {
+				hasDecoder(
+					mimeDolbyVision,
+					CodecProfileLevel.DolbyVisionProfileDvheSt,
+					CodecProfileLevel.DolbyVisionLevelHd24,
+				)
+			} returns true
+		}
+		HevcCodecCapabilities(query).supportsHevcDolbyVisionProfile8() shouldBe true
+	}
+
+	test("supportsHevcDolbyVisionProfile8 returns false before API 27") {
+		every { AndroidVersion.sdkInt } returns apiOMr1 - 1
+		HevcCodecCapabilities(mockk()).supportsHevcDolbyVisionProfile8() shouldBe false
 	}
 
 	test("supportsHevcHDR10 returns false when sdkInt below API 24") {

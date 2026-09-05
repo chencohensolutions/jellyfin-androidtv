@@ -43,6 +43,8 @@ class MediaCodecCapabilitiesTest(
 
 	fun supportsHevcDolbyVisionEL(): Boolean = hevc.supportsHevcDolbyVisionEL()
 
+	fun supportsHevcDolbyVisionProfile8(): Boolean = hevc.supportsHevcDolbyVisionProfile8()
+
 	fun supportsHevcHDR10(): Boolean = hevc.supportsHevcHDR10()
 
 	fun supportsHevcHDR10Plus(): Boolean = hevc.supportsHevcHDR10Plus()

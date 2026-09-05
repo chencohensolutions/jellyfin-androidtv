@@ -1,6 +1,7 @@
 package org.jellyfin.androidtv.util.profile.codec
 
 import android.media.MediaCodecInfo.CodecProfileLevel
+import android.os.Build
 import androidx.media3.common.MimeTypes
 import org.jellyfin.androidtv.util.AndroidVersion
 
@@ -49,6 +50,14 @@ class HevcCodecCapabilities(
 				CodecProfileLevel.DolbyVisionLevelHd24,
 			) &&
 			query.supportsMultiInstance(MIME_HEVC)
+
+	fun supportsHevcDolbyVisionProfile8(): Boolean =
+		AndroidVersion.sdkInt >= Build.VERSION_CODES.O_MR1 &&
+			query.hasDecoder(
+				MIME_DOLBY_VISION,
+				CodecProfileLevel.DolbyVisionProfileDvheSt,
+				CodecProfileLevel.DolbyVisionLevelHd24,
+			)
 
 	fun supportsHevcHDR10(): Boolean =
 		AndroidVersion.isAtLeastN &&
