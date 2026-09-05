@@ -8,3 +8,4 @@ local.properties
 build/
 captures/
 .cxx/
+playback/media3/exoplayer/.cxx/

@@ -16,8 +16,12 @@ import androidx.media3.extractor.ForwardingTrackOutput
 import androidx.media3.extractor.TrackOutput
 import androidx.media3.extractor.text.SubtitleParser
 import androidx.media3.exoplayer.analytics.PlayerId
+import androidx.media3.datasource.DataSource
+import androidx.media3.exoplayer.hls.DefaultHlsExtractorFactory
 import androidx.media3.exoplayer.hls.HlsExtractorFactory
 import androidx.media3.exoplayer.hls.HlsMediaChunkExtractor
+import androidx.media3.exoplayer.hls.HlsMediaSource
+import androidx.media3.exoplayer.source.MediaSourceFactory
 import android.net.Uri
 import android.util.Log
 import timber.log.Timber
@@ -94,6 +98,19 @@ object DoviCompat {
         convertNal62 = DoviRpu::convertP7NalToP8,
         onReport = { report -> Timber.d("Dolby Vision compatibility: $report") },
     )
+
+    @JvmStatic
+    fun createHlsMediaSourceFactory(dataSourceFactory: DataSource.Factory): MediaSourceFactory =
+        HlsMediaSource.Factory(dataSourceFactory)
+            .setExtractorFactory(
+                DoviCompatHlsExtractorFactory(
+                    delegate = DefaultHlsExtractorFactory(),
+                    mode = DoviCompatibility::mode,
+                    convertNal62 = DoviRpu::convertP7NalToP8,
+                    onReport = { report -> Timber.d("Dolby Vision HLS compatibility: $report") },
+                ),
+            )
+            .setAllowChunklessPreparation(false)
 }
 
 /**

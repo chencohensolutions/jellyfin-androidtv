@@ -136,6 +136,18 @@ fun SettingsPlaybackAdvancedScreen() {
 		}
 
 		item {
+			var directStreamSelectedAudio by rememberPreference(userPreferences, UserPreferences.directStreamSelectedAudio)
+
+			ListButton(
+				headingContent = { Text(stringResource(R.string.direct_stream_selected_audio)) },
+				captionContent = { Text(stringResource(R.string.direct_stream_selected_audio_description)) },
+				trailingContent = { Checkbox(checked = directStreamSelectedAudio) },
+				onClick = { directStreamSelectedAudio = !directStreamSelectedAudio },
+				modifier = Modifier.focusKey("direct_stream_selected_audio")
+			)
+		}
+
+		item {
 			var refreshRateSwitchingBehavior by rememberPreference(userPreferences, UserPreferences.refreshRateSwitchingBehavior)
 
 			ListButton(

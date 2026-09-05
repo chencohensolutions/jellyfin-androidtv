@@ -1,3 +1,0 @@
-C:/src/jellyfin-androidtv/playback/media3/exoplayer/.cxx/Debug/2o2115p6/armeabi-v7a/CMakeFiles/moonfin_dovi.dir
-C:/src/jellyfin-androidtv/playback/media3/exoplayer/.cxx/Debug/2o2115p6/armeabi-v7a/CMakeFiles/edit_cache.dir
-C:/src/jellyfin-androidtv/playback/media3/exoplayer/.cxx/Debug/2o2115p6/armeabi-v7a/CMakeFiles/rebuild_cache.dir

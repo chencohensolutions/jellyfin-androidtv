@@ -521,6 +521,7 @@ public class PlaybackController implements PlaybackControllerNotifiable {
         internalOptions.setMediaSources(item.getMediaSources());
         internalOptions.setAlwaysBurnInSubtitleWhenTranscoding(userPreferences.getValue().get(UserPreferences.Companion.getSubtitlesBurnDuringTranscode()));
         if (playbackRetries > 0 || (isLiveTv && !directStreamLiveTv)) internalOptions.setEnableDirectPlay(false);
+		if (userPreferences.getValue().get(UserPreferences.Companion.getDirectStreamSelectedAudio())) internalOptions.setEnableDirectPlay(false);
         if (playbackRetries > 1) internalOptions.setEnableDirectStream(false);
         if (mCurrentOptions != null) {
             internalOptions.setSubtitleStreamIndex(mCurrentOptions.getSubtitleStreamIndex());

@@ -19,7 +19,7 @@
 			"args": [
 				"-NoProfile",
 				"-Command",
-				"$apk = Get-ChildItem '${workspaceFolder}/app/build/outputs/apk/release' -Filter '*-release-local.apk' | Select-Object -First 1; if ($null -eq $apk) { throw 'Release APK not found' }; adb install -r $apk.FullName; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }"
+				"$apk = Get-ChildItem '${workspaceFolder}/app/build/outputs/apk/release' -Filter '*-release-local.apk' | Select-Object -First 1; if ($null -eq $apk) { throw 'Signed release APK not found. Configure the release keystore properties before installing.' }; adb -s '${input:androidDevice}' install -r $apk.FullName; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }"
 			],
 			"options": {
 				"cwd": "${workspaceFolder}"
@@ -32,6 +32,14 @@
 				"install release"
 			],
 			"dependsOrder": "sequence"
+		}
+	],
+	"inputs": [
+		{
+			"id": "androidDevice",
+			"type": "promptString",
+			"description": "ADB device serial",
+			"default": "192.168.50.111:40305"
 		}
 	]
 }

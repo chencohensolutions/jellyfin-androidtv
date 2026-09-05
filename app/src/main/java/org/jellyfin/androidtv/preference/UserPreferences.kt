@@ -55,6 +55,12 @@ class UserPreferences(context: Context) : SharedPreferenceStore(
 		var maxBitrate = stringPreference("pref_max_bitrate", "100")
 
 		/**
+		 * Request Jellyfin direct streaming instead of the original container so
+		 * the server can send only the selected audio track.
+		 */
+		var directStreamSelectedAudio = booleanPreference("direct_stream_selected_audio", false)
+
+		/**
 		 * Auto-play next item
 		 */
 		var mediaQueuingEnabled = booleanPreference("pref_enable_tv_queuing", true)

@@ -55,6 +55,7 @@ import org.jellyfin.androidtv.preference.UserPreferences;
 import org.jellyfin.androidtv.preference.constant.BufferLength;
 import org.jellyfin.androidtv.preference.constant.ZoomMode;
 import org.jellyfin.playback.media3.exoplayer.DoviCompat;
+import org.jellyfin.playback.media3.exoplayer.DoviMediaSourceFactory;
 import org.jellyfin.sdk.api.client.ApiClient;
 import org.jellyfin.sdk.model.api.MediaStream;
 import org.jellyfin.sdk.model.api.MediaStreamType;
@@ -251,11 +252,12 @@ public class VideoManager {
             ExtractorsFactory assExtractorsFactory = AssPlayerKt.withAssMkvSupport(extractorsFactory, assSubtitleParserFactory, assHandler);
             DefaultMediaSourceFactory mediaSourceFactory = new DefaultMediaSourceFactory(dataSourceFactory, DoviCompat.wrap(assExtractorsFactory));
             mediaSourceFactory.setSubtitleParserFactory(assSubtitleParserFactory);
-            exoPlayerBuilder.setMediaSourceFactory(mediaSourceFactory);
+            exoPlayerBuilder.setMediaSourceFactory(new DoviMediaSourceFactory(mediaSourceFactory, DoviCompat.createHlsMediaSourceFactory(dataSourceFactory)));
             exoPlayerBuilder.setRenderersFactory(new AssRenderersFactory(assHandler, defaultRendererFactory));
         } else {
             exoPlayerBuilder.setRenderersFactory(defaultRendererFactory);
-            exoPlayerBuilder.setMediaSourceFactory(new DefaultMediaSourceFactory(dataSourceFactory, DoviCompat.wrap(extractorsFactory)));
+            DefaultMediaSourceFactory mediaSourceFactory = new DefaultMediaSourceFactory(dataSourceFactory, DoviCompat.wrap(extractorsFactory));
+            exoPlayerBuilder.setMediaSourceFactory(new DoviMediaSourceFactory(mediaSourceFactory, DoviCompat.createHlsMediaSourceFactory(dataSourceFactory)));
         }
 
         BufferLength bufferLength = userPreferences.get(UserPreferences.Companion.getBufferLength());

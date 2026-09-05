@@ -7,7 +7,7 @@ import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.MediaSourceFactory
 
 @UnstableApi
-internal class DoviMediaSourceFactory(
+class DoviMediaSourceFactory(
     private val delegate: MediaSourceFactory,
     private val hlsFactory: MediaSourceFactory,
 ) : MediaSourceFactory by delegate {
